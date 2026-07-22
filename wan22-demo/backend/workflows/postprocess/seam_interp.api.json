@@ -1,0 +1,46 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "_meta": { "title": "接缝左边界帧（段N 有效区最后一帧）" },
+    "inputs": { "image": "example.png", "upload": "image" }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "_meta": { "title": "接缝右边界帧（段N+1 有效区第一帧）" },
+    "inputs": { "image": "example.png", "upload": "image" }
+  },
+  "3": {
+    "class_type": "ImageBatch",
+    "_meta": { "title": "合批为 2 帧序列，供 RIFE 插值" },
+    "inputs": {
+      "image1": ["1", 0],
+      "image2": ["2", 0]
+    }
+  },
+  "4": {
+    "class_type": "RIFE VFI",
+    "_meta": {
+      "title": "RIFE 插帧（ComfyUI-Frame-Interpolation / Fannovel16，需通过 ComfyUI Manager 安装）"
+    },
+    "inputs": {
+      "frames": ["3", 0],
+      "ckpt_name": "rife47.pth",
+      "clear_cache_after_n_frames": 10,
+      "multiplier": 3,
+      "fast_mode": true,
+      "ensemble": true,
+      "scale_factor": 1.0,
+      "dtype": "float32",
+      "torch_compile": false,
+      "batch_size": 1
+    }
+  },
+  "5": {
+    "class_type": "SaveImage",
+    "_meta": { "title": "输出插值帧序列（含首尾边界帧）" },
+    "inputs": {
+      "images": ["4", 0],
+      "filename_prefix": "seam_rife"
+    }
+  }
+}

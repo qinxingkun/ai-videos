@@ -1,0 +1,29 @@
+{
+  "scenarios": [
+    {
+      "id": "small-speaker-large-listener",
+      "description": "小脸角色说话，大脸角色旁听",
+      "required": ["target_track_only", "listener_unchanged", "per_utterance_syncnet"]
+    },
+    {
+      "id": "position-swap",
+      "description": "两名角色在镜头内交换左右位置",
+      "required": ["stable_track_id", "arcface_reid", "no_identity_switch"]
+    },
+    {
+      "id": "short-occlusion",
+      "description": "目标角色短时被手或道具遮挡",
+      "required": ["gap_interpolation", "visible_ratio_gate", "explicit_fallback"]
+    },
+    {
+      "id": "out-of-frame",
+      "description": "目标角色在台词期间离开画面",
+      "required": ["preferred_fallback", "required_failure"]
+    },
+    {
+      "id": "ambiguous-auto-binding",
+      "description": "自动绑定 top1/top2 差距不足",
+      "required": ["awaiting_binding", "manual_override", "session_resume"]
+    }
+  ]
+}

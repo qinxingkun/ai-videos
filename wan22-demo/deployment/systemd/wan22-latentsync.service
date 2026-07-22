@@ -1,0 +1,18 @@
+[Unit]
+Description=Wan22 LatentSync 1.6 Provider
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/ddr2/qxk/workspace/ai-videos/LatentSync
+Environment=CUDA_VISIBLE_DEVICES=1
+Environment=PYTHONUNBUFFERED=1
+Environment=NO_PROXY=127.0.0.1,localhost
+Environment=HF_ENDPOINT=https://hf-mirror.com
+Environment=HF_HUB_OFFLINE=1
+ExecStart=/home/hik/miniconda3/envs/latentsync/bin/python /mnt/ddr2/qxk/workspace/ai-videos/wan22-demo/deployment/providers/latentsync_server.py --latentsync-root /mnt/ddr2/qxk/workspace/ai-videos/LatentSync --port 8192
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

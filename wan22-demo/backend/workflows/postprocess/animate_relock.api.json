@@ -1,0 +1,118 @@
+{
+  "1": {
+    "class_type": "VHS_LoadVideo",
+    "_meta": { "title": "驱动视频（第一遍生成的已渲染分段，仅取运动/构图）" },
+    "inputs": {
+      "video": "example.mp4",
+      "force_rate": 16,
+      "force_size": "Custom Width & Height",
+      "custom_width": 1280,
+      "custom_height": 720,
+      "frame_load_cap": 81,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "_meta": { "title": "身份参考图（角色定妆照）" },
+    "inputs": { "image": "example.png", "upload": "image" }
+  },
+  "3": {
+    "class_type": "WanVideoModelLoader",
+    "_meta": { "title": "Wan2.2-Animate 官方发布权重（纯推理，需通过 ComfyUI-WanVideoWrapper 安装）" },
+    "inputs": {
+      "model": "Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors",
+      "base_precision": "fp16",
+      "quantization": "disabled",
+      "load_device": "main_device"
+    }
+  },
+  "4": {
+    "class_type": "WanVideoVAELoader",
+    "_meta": { "title": "Wan Video VAE（复用现有 wan_2.1_vae.safetensors，无需重复下载）" },
+    "inputs": { "model_name": "wan_2.1_vae.safetensors", "precision": "fp16" }
+  },
+  "5": {
+    "class_type": "LoadWanVideoT5TextEncoder",
+    "_meta": {
+      "title": "T5 文本编码器（需 umt5-xxl-enc-fp8_e4m3fn.safetensors，非 scaled 格式；ComfyUI 原生 umt5_xxl_fp8_e4m3fn_scaled.safetensors 不兼容此节点）"
+    },
+    "inputs": {
+      "model_name": "umt5-xxl-enc-fp8_e4m3fn.safetensors",
+      "precision": "bf16",
+      "load_device": "offload_device",
+      "quantization": "disabled"
+    }
+  },
+  "6": {
+    "class_type": "WanVideoTextEncode",
+    "_meta": { "title": "正/负向提示词（身份重锁定不改变运镜，提示词可留空）" },
+    "inputs": {
+      "t5": ["5", 0],
+      "positive_prompt": "",
+      "negative_prompt": "changing face, different person, morphing identity, inconsistent identity"
+    }
+  },
+  "7": {
+    "class_type": "WanVideoAnimateEmbeds",
+    "_meta": {
+      "title": "身份重锁定条件：pose_images 取驱动视频运动，ref_images 提供身份/外观"
+    },
+    "inputs": {
+      "vae": ["4", 0],
+      "width": 1280,
+      "height": 720,
+      "num_frames": 81,
+      "force_offload": true,
+      "frame_window_size": 77,
+      "colormatch": "disabled",
+      "pose_strength": 1.0,
+      "face_strength": 1.0,
+      "ref_images": ["2", 0],
+      "pose_images": ["1", 0]
+    }
+  },
+  "8": {
+    "class_type": "WanVideoSampler",
+    "_meta": { "title": "身份重锁定二次采样（额外一次推理，耗时约为原生成的一倍）" },
+    "inputs": {
+      "model": ["3", 0],
+      "image_embeds": ["7", 0],
+      "text_embeds": ["6", 0],
+      "steps": 20,
+      "cfg": 1.0,
+      "shift": 5.0,
+      "seed": 0,
+      "force_offload": true,
+      "scheduler": "unipc",
+      "riflex_freq_index": 0
+    }
+  },
+  "9": {
+    "class_type": "WanVideoDecode",
+    "_meta": { "title": "VAE 解码为图像序列" },
+    "inputs": {
+      "vae": ["4", 0],
+      "samples": ["8", 0],
+      "enable_vae_tiling": true,
+      "tile_x": 272,
+      "tile_y": 272,
+      "tile_stride_x": 144,
+      "tile_stride_y": 128
+    }
+  },
+  "10": {
+    "class_type": "VHS_VideoCombine",
+    "_meta": { "title": "输出身份锁定重渲染后的分段视频" },
+    "inputs": {
+      "images": ["9", 0],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "animate_relock",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "mode": "i2v",
+  "engine": "wan",
+  "shotCount": 2,
+  "framesPerShot": 125,
+  "description": "双人两段轮流说话：低置信度需人工绑定，第二镜 I2V 延续",
+  "characters": [
+    {
+      "id": "actor-a",
+      "speakerId": "speaker-a",
+      "name": "角色甲",
+      "voiceId": "actor-a.wav",
+      "referenceImageName": "actor-a.png"
+    },
+    {
+      "id": "actor-b",
+      "speakerId": "speaker-b",
+      "name": "角色乙",
+      "voiceId": "actor-b.wav",
+      "referenceImageName": "actor-b.png"
+    }
+  ],
+  "shots": [
+    {
+      "index": 0,
+      "dialogue": "角色甲: \"今天的计划先从这里开始。\"\n角色乙: \"好，我继续跟进后半段。\"",
+      "startFrame": 0,
+      "endFrame": 125,
+      "lipSyncPolicy": "required"
+    },
+    {
+      "index": 1,
+      "dialogue": "角色甲: \"第二镜我先说。\"\n角色乙: \"然后到我。\"",
+      "startFrame": 0,
+      "endFrame": 125,
+      "lipSyncPolicy": "preferred"
+    }
+  ],
+  "utterances": [
+    {
+      "id": "shot-1-utterance-1",
+      "speakerId": "speaker-a",
+      "text": "今天的计划先从这里开始。",
+      "startFrame": 0,
+      "endFrame": 62,
+      "lipSyncPolicy": "required"
+    },
+    {
+      "id": "shot-1-utterance-2",
+      "speakerId": "speaker-b",
+      "text": "好，我继续跟进后半段。",
+      "startFrame": 62,
+      "endFrame": 125,
+      "lipSyncPolicy": "required"
+    },
+    {
+      "id": "shot-2-utterance-1",
+      "speakerId": "speaker-a",
+      "text": "第二镜我先说。",
+      "startFrame": 125,
+      "endFrame": 187,
+      "lipSyncPolicy": "preferred"
+    },
+    {
+      "id": "shot-2-utterance-2",
+      "speakerId": "speaker-b",
+      "text": "然后到我。",
+      "startFrame": 187,
+      "endFrame": 250,
+      "lipSyncPolicy": "preferred"
+    }
+  ],
+  "bindingsSeed": [
+    {
+      "speakerId": "speaker-a",
+      "status": "binding_required",
+      "confidence": 0.41,
+      "candidateTrackId": "track_0",
+      "reason": "top1/top2 gap below threshold"
+    },
+    {
+      "speakerId": "speaker-b",
+      "status": "binding_required",
+      "confidence": 0.38,
+      "candidateTrackId": "track_1",
+      "reason": "top1/top2 gap below threshold"
+    }
+  ],
+  "manualOverrides": {
+    "speaker-a": "track_0",
+    "speaker-b": "track_1"
+  },
+  "expected": {
+    "fps": 25,
+    "sampleRate": 48000,
+    "totalFrames": 250,
+    "overlapAllowed": false,
+    "awaitingBinding": true,
+    "requiredUnboundBlocks": true,
+    "preferredUnboundDeliverable": true
+  }
+}

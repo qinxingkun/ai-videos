@@ -1,0 +1,17 @@
+[Unit]
+Description=Wan22 CosyVoice 3 Provider
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/ddr2/qxk/workspace/ai-videos/CosyVoice
+Environment=CUDA_VISIBLE_DEVICES=1
+Environment=PYTHONUNBUFFERED=1
+Environment=NO_PROXY=127.0.0.1,localhost
+Environment=HF_HUB_OFFLINE=1
+ExecStart=/home/hik/miniconda3/envs/cosyvoice/bin/python /mnt/ddr2/qxk/workspace/ai-videos/wan22-demo/deployment/providers/cosyvoice_server.py --cosyvoice-root /mnt/ddr2/qxk/workspace/ai-videos/CosyVoice --model-dir /mnt/ddr2/qxk/workspace/ai-videos/CosyVoice/pretrained_models/Fun-CosyVoice3-0.5B --voice-root /mnt/ddr2/qxk/workspace/ai-videos/wan22-demo/backend/data/voices --default-voice default.wav --whisper-checkpoint /mnt/ddr2/qxk/workspace/ai-videos/LatentSync/checkpoints/whisper/tiny.pt --port 8191
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

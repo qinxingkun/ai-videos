@@ -1,0 +1,45 @@
+{
+  "1": {
+    "class_type": "VHS_LoadVideo",
+    "_meta": { "title": "Smart Splice 全片输入" },
+    "inputs": {
+      "video": "final.mp4",
+      "force_rate": 0,
+      "force_size": "Disabled",
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1
+    }
+  },
+  "2": {
+    "class_type": "RIFE VFI",
+    "_meta": { "title": "全片 RIFE 2x 插帧，随后精确重采样到 25fps" },
+    "inputs": {
+      "frames": ["1", 0],
+      "ckpt_name": "rife47.pth",
+      "clear_cache_after_n_frames": 10,
+      "multiplier": 2,
+      "fast_mode": true,
+      "ensemble": true,
+      "scale_factor": 1.0,
+      "dtype": "float32",
+      "torch_compile": false,
+      "batch_size": 1
+    }
+  },
+  "3": {
+    "class_type": "VHS_VideoCombine",
+    "_meta": { "title": "RIFE 中间母版（最终由 ffmpeg 锁 25fps CFR/PTS0）" },
+    "inputs": {
+      "images": ["2", 0],
+      "frame_rate": 32,
+      "loop_count": 0,
+      "filename_prefix": "visual_master_rife",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

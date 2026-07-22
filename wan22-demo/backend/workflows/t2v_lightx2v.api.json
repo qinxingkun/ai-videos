@@ -1,0 +1,110 @@
+{
+  "37": {
+    "class_type": "UNETLoader",
+    "_meta": { "title": "高噪模型 (high noise)" },
+    "inputs": { "unet_name": "wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors", "weight_dtype": "default" }
+  },
+  "38": {
+    "class_type": "UNETLoader",
+    "_meta": { "title": "低噪模型 (low noise)" },
+    "inputs": { "unet_name": "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors", "weight_dtype": "default" }
+  },
+  "41": {
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "LightX2V LoRA (high noise)" },
+    "inputs": {
+      "model": ["37", 0],
+      "lora_name": "wan2.2_t2v_lightx2v_4steps_lora_v1.1_high_noise.safetensors",
+      "strength_model": 1.0
+    }
+  },
+  "42": {
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "LightX2V LoRA (low noise)" },
+    "inputs": {
+      "model": ["38", 0],
+      "lora_name": "wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
+      "strength_model": 1.0
+    }
+  },
+  "39": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan", "device": "default" }
+  },
+  "40": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "wan_2.1_vae.safetensors" }
+  },
+  "48": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": { "shift": 8.0, "model": ["41", 0] }
+  },
+  "49": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": { "shift": 8.0, "model": ["42", 0] }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "正向提示词" },
+    "inputs": { "text": "a cinematic shot", "clip": ["39", 0] }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "负向提示词" },
+    "inputs": { "text": "色调艳丽, 过曝, 静态, 细节模糊不清", "clip": ["39", 0] }
+  },
+  "5": {
+    "class_type": "EmptyHunyuanLatentVideo",
+    "inputs": { "width": 1280, "height": 720, "length": 81, "batch_size": 1 }
+  },
+  "3": {
+    "class_type": "KSamplerAdvanced",
+    "_meta": { "title": "采样-高噪阶段" },
+    "inputs": {
+      "add_noise": "enable",
+      "noise_seed": 0,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 0,
+      "end_at_step": 2,
+      "return_with_leftover_noise": "enable",
+      "model": ["48", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "4": {
+    "class_type": "KSamplerAdvanced",
+    "_meta": { "title": "采样-低噪阶段" },
+    "inputs": {
+      "add_noise": "disable",
+      "noise_seed": 0,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "start_at_step": 2,
+      "end_at_step": 4,
+      "return_with_leftover_noise": "disable",
+      "model": ["49", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["3", 0]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["4", 0], "vae": ["40", 0] }
+  },
+  "9": {
+    "class_type": "CreateVideo",
+    "inputs": { "fps": 16, "images": ["8", 0] }
+  },
+  "10": {
+    "class_type": "SaveVideo",
+    "inputs": { "filename_prefix": "video/Wan2.2_t2v", "format": "mp4", "codec": "h264", "video": ["9", 0] }
+  }
+}

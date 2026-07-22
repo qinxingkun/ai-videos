@@ -1,0 +1,195 @@
+# =============================================================================
+# ai-videos monorepo — 排除大文件与运行时产物，仅跟踪源码与配置
+# =============================================================================
+
+# --- Python ---
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+**/*.egg-info/
+**/.eggs/
+**/dist/
+**/build/
+**/*.so
+**/.coverage
+**/htmlcov/
+
+# --- Node.js ---
+**/node_modules/
+**/npm-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/.pnpm-store/
+**/frontend/dist/
+**/.vite/
+
+# --- 模型权重 / checkpoint（最大头） ---
+**/*.safetensors
+**/*.ckpt
+**/*.pth
+**/*.pt
+**/*.bin
+**/*.onnx
+**/*.gguf
+**/*.ggml
+**/*.npz
+**/*.npy
+**/*.pkl
+**/*.pickle
+**/*.h5
+**/*.pb
+**/*.tflite
+**/*.engine
+**/*.plan
+**/*.trt
+**/*.caffemodel
+**/*.msgpack
+**/models/
+**/checkpoints/
+**/pretrained_models/
+**/weights/
+**/ckpts/
+**/whisper/
+**/auxiliary/models/
+**/insightface/models/
+**/latent_upscale_models/
+**/diffusion_models/
+**/text_encoders/
+**/loras/
+**/controlnet/
+**/vae/
+**/unet/
+**/clip/
+**/clip_vision/
+**/embeddings/
+**/hypernetworks/
+**/upscale_models/
+**/instantid/
+
+# 保留 ComfyUI 空目录占位（若存在 .gitkeep）
+!**/.gitkeep
+
+# --- 生成 / 输入媒体 ---
+**/output/
+**/outputs/
+**/input/
+!**/input/example.png
+!**/input/example.jpg
+**/uploads/
+**/inference_result/
+**/generated/
+**/renders/
+**/*.mp4
+**/*.webm
+**/*.mov
+**/*.avi
+**/*.mkv
+**/*.m4v
+**/*.flv
+**/*.wmv
+**/*.gif
+**/*.wav
+**/*.mp3
+**/*.flac
+**/*.aac
+**/*.ogg
+**/*.m4a
+
+# 保留小体积示例资源（按路径白名单）
+!**/assets/demo*.mp4
+!**/assets/demo*.jpg
+!**/assets/demo*.png
+!**/data/fixtures/**
+
+# --- 日志 / PID / 运行时 ---
+**/*.log
+**/*.pid
+**/logs/
+**/deployment/logs/
+**/temp/
+**/tmp/
+**/.temp/
+**/work/
+**/cache/
+**/.cache/
+**/user/
+**/.comfy_environment
+
+# --- 本地配置 / 密钥 ---
+**/.env
+**/.env.local
+**/.env.*.local
+**/*.local
+**/secrets/
+**/.DS_Store
+**/Thumbs.db
+
+# --- wan22-demo 运行时数据 ---
+wan22-demo/backend/data/characters.json
+wan22-demo/backend/data/voices/
+wan22-demo/backend/data/dubbing_sessions/
+
+# --- video-concat 运行时 ---
+video-concat/uploads/
+video-concat/output/
+
+# --- ComfyUI 特有 ---
+ComfyUI/custom_nodes/
+!ComfyUI/custom_nodes/example_node.py.example
+ComfyUI/extra_model_paths.yaml
+ComfyUI/web_custom_versions/
+ComfyUI/uv.lock
+ComfyUI/filtered-openapi.yaml
+
+# 保留已安装的 custom node 清单（可选跟踪）
+# !ComfyUI/custom_nodes/ComfyUI-WanVideoWrapper/
+# !ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/
+
+# --- 实验 / 未接入主链路（本地保留，不提交） ---
+JoyAI-Echo/
+GPT-SoVITS/
+MuseTalk/
+
+# --- 实验 / 未接入主链路（本地保留，不提交） ---
+JoyAI-Echo/
+GPT-SoVITS/
+MuseTalk/
+ComfyUI_JoyAI_Echo/
+
+# --- 归档 / 不完整下载 ---
+archive/
+**/LatentSync.partial*/
+**/._____temp/
+**/.mv
+
+# --- 大体积压缩包 ---
+**/*.tar
+**/*.tar.gz
+**/*.tgz
+**/*.zip
+**/*.7z
+**/*.rar
+**/*.gz
+**/*.bz2
+**/*.xz
+
+# --- IDE ---
+**/.vscode/
+**/.idea/
+**/.vs/
+**/*.swp
+**/*.swo
+**/*~
+
+# --- 外部 models 软链（权重在外部目录） ---
+models/
+
+# --- HuggingFace / ModelScope 缓存 ---
+**/.cache/huggingface/
+**/.cache/modelscope/
+**/hub/

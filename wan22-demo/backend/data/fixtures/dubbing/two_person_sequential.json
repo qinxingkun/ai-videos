@@ -1,0 +1,46 @@
+{
+  "characters": [
+    {
+      "id": "actor-a",
+      "speakerId": "speaker-a",
+      "name": "角色甲",
+      "voiceId": "actor-a.wav",
+      "referenceImageName": "actor-a.png"
+    },
+    {
+      "id": "actor-b",
+      "speakerId": "speaker-b",
+      "name": "角色乙",
+      "voiceId": "actor-b.wav",
+      "referenceImageName": "actor-b.png"
+    }
+  ],
+  "utterances": [
+    {
+      "id": "u-a-001",
+      "speakerId": "speaker-a",
+      "text": "我们现在开始。",
+      "startFrame": 0,
+      "endFrame": 50,
+      "lipSyncPolicy": "required"
+    },
+    {
+      "id": "u-b-001",
+      "speakerId": "speaker-b",
+      "text": "好的，我已经准备好了。",
+      "startFrame": 50,
+      "endFrame": 125,
+      "lipSyncPolicy": "required"
+    }
+  ],
+  "expected": {
+    "fps": 25,
+    "sampleRate": 48000,
+    "overlapAllowed": false,
+    "requiredFallbacks": 0,
+    "targetFaceCorrectRateMin": 0.9,
+    "syncnetConfidenceMin": 3.0,
+    "syncnetOffsetMaxFrames": 1,
+    "asrSimilarityMin": 0.7
+  }
+}
