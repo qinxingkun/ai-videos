@@ -1,0 +1,25 @@
+default_model_name: "wan2.2"
+default_model_size: "i2v-a14b"
+
+model_configs:
+  wan2.2:
+    "i2v-a14b":
+      modelscope_repo:
+        ["Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "Wan-AI/Wan2.2-I2V-A14B"]
+      model_name: "wan2.2"
+      model_size: "i2v-a14b"
+      ncore: 2
+      ndevice: 1
+      video_width: 480
+      video_height: 832
+      quant_type: "w8a8"
+    "t2v-a14b":
+      modelscope_repo:
+        ["Comfy-Org/Wan_2.2_ComfyUI_Repackaged", "Wan-AI/Wan2.2-T2V-A14B"]
+      model_name: "wan2.2"
+      model_size: "t2v-a14b"
+      ncore: 2
+      ndevice: 1
+      video_width: 480
+      video_height: 832
+      quant_type: "w8a8"

@@ -277,19 +277,12 @@ comfyui-workflow-templates is not installed.
             return None
 
         asset_map: Dict[str, str] = {}
-        overrides_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "template_overrides"
-        )
         try:
             for entry in template_entries:
                 for asset in entry.assets:
-                    override_path = os.path.join(overrides_dir, asset.filename)
-                    if os.path.isfile(override_path):
-                        asset_map[asset.filename] = override_path
-                    else:
-                        asset_map[asset.filename] = get_asset_path(
-                            entry.template_id, asset.filename
-                        )
+                    asset_map[asset.filename] = get_asset_path(
+                        entry.template_id, asset.filename
+                    )
         except Exception as exc:
             logging.error(f"Failed to resolve template asset paths: {exc}")
             return None

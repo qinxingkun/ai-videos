@@ -8,7 +8,6 @@ from typing_extensions import override
 from fractions import Fraction
 from comfy_api.latest import ComfyExtension, io, ui, Input, InputImpl, Types
 from comfy.cli_args import args
-from comfy import output_naming
 
 class SaveWEBM(io.ComfyNode):
     @classmethod
@@ -28,13 +27,11 @@ class SaveWEBM(io.ComfyNode):
             ],
             hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
             is_output_node=True,
+            outputs=[io.Image.Output(display_name="images")]
         )
 
     @classmethod
     def execute(cls, images, codec, fps, filename_prefix, crf) -> io.NodeOutput:
-        if cls.hidden.prompt is not None:
-            filename_prefix = output_naming.build_media_filename_prefix(cls.hidden.prompt, filename_prefix)
-
         full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(
             filename_prefix, folder_paths.get_output_directory(), images[0].shape[1], images[0].shape[0]
         )
@@ -73,7 +70,7 @@ class SaveWEBM(io.ComfyNode):
         container.mux(stream.encode())
         container.close()
 
-        return io.NodeOutput(ui=ui.PreviewVideo([ui.SavedResult(file, subfolder, io.FolderType.output)]))
+        return io.NodeOutput(images, ui=ui.PreviewVideo([ui.SavedResult(file, subfolder, io.FolderType.output)]))
 
 class SaveVideo(io.ComfyNode):
     @classmethod
@@ -84,22 +81,46 @@ class SaveVideo(io.ComfyNode):
             display_name="Save Video",
             category="video",
             essentials_category="Basics",
-            description="Saves the input images to your ComfyUI output directory.",
+            description="Saves the input videos to your ComfyUI output directory.",
             inputs=[
                 io.Video.Input("video", tooltip="The video to save."),
                 io.String.Input("filename_prefix", default="video/ComfyUI", tooltip="The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."),
                 io.Combo.Input("format", options=Types.VideoContainer.as_input(), default="auto", tooltip="The format to save the video as."),
-                io.Combo.Input("codec", options=Types.VideoCodec.as_input(), default="auto", tooltip="The codec to use for the video."),
+                io.DynamicCombo.Input(
+                    "codec",
+                    options=[
+                        io.DynamicCombo.Option("auto", []),
+                        io.DynamicCombo.Option(
+                            "h264",
+                            [
+                                io.DynamicCombo.Input(
+                                    "encoding",
+                                    display_name="encoding mode",
+                                    options=[
+                                        io.DynamicCombo.Option("auto", []),
+                                        io.DynamicCombo.Option(
+                                            "re-encode",
+                                            [io.Float.Input("crf", default=23.0, min=0.0, max=51.0, step=1.0, tooltip="Lower values produce higher quality and larger files.")],
+                                        ),
+                                    ],
+                                    optional=True,
+                                    tooltip="Automatic preserves compatible H.264 streams. Re-encode applies a custom CRF.",
+                                ),
+                            ],
+                        ),
+                    ],
+                    tooltip="The codec to use for the video.",
+                ),
             ],
             hidden=[io.Hidden.prompt, io.Hidden.extra_pnginfo],
             is_output_node=True,
+            outputs=[io.Video.Output("video")],
         )
 
     @classmethod
-    def execute(cls, video: Input.Video, filename_prefix, format: str, codec) -> io.NodeOutput:
-        if cls.hidden.prompt is not None:
-            filename_prefix = output_naming.build_media_filename_prefix(cls.hidden.prompt, filename_prefix)
-
+    def execute(cls, video: Input.Video, filename_prefix, format: str, codec: io.DynamicCombo.Type) -> io.NodeOutput:
+        codec_name = codec["codec"]
+        encoding = codec.get("encoding") or {}
         width, height = video.get_dimensions()
         full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(
             filename_prefix,
@@ -120,11 +141,12 @@ class SaveVideo(io.ComfyNode):
         video.save_to(
             os.path.join(full_output_folder, file),
             format=Types.VideoContainer(format),
-            codec=codec,
-            metadata=saved_metadata
+            codec=codec_name,
+            metadata=saved_metadata,
+            crf=encoding.get("crf"),
         )
 
-        return io.NodeOutput(ui=ui.PreviewVideo([ui.SavedResult(file, subfolder, io.FolderType.output)]))
+        return io.NodeOutput(video, ui=ui.PreviewVideo([ui.SavedResult(file, subfolder, io.FolderType.output)]))
 
 
 class CreateVideo(io.ComfyNode):
@@ -240,13 +262,8 @@ class VideoSlice(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="Video Slice",
-            display_name="Video Slice",
-            search_aliases=[
-                "trim video duration",
-                "skip first frames",
-                "frame load cap",
-                "start time",
-            ],
+            display_name="Trim Video",
+            search_aliases=["trim video duration", "skip first frames", "frame load cap", "start time"],
             category="video",
             essentials_category="Video Tools",
             inputs=[

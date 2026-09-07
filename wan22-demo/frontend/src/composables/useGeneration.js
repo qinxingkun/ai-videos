@@ -296,14 +296,33 @@ export function useGeneration(mode, { engine = 'wan', onDone } = {}) {
     let imageName = params.imageName || null
     let firstImageName = params.firstImageName || null
     let lastImageName = params.lastImageName || null
+    let lookbookName = params.lookbookName || params.refImageName || null
 
     if (mode === 'i2v') {
-      if (!params.imageFile && !imageName) throw new Error('请先选择起始图片')
+      if (params.useVace && params.lookbookFile) {
+        status.value = 'uploading'
+        queueHint.value = '正在上传定妆照…'
+        const upLb = await uploadImage(params.lookbookFile)
+        lookbookName = upLb.name
+      }
+
+      if (!params.imageFile && !imageName) {
+        // VACE：允许只传定妆照（起始回退为定妆照）；普通 I2V 必须有起始图
+        if (params.useVace && lookbookName) {
+          imageName = lookbookName
+        } else {
+          throw new Error('请先选择起始图片')
+        }
+      }
       if (params.imageFile) {
         status.value = 'uploading'
         queueHint.value = '正在上传起始图片…'
         const up = await uploadImage(params.imageFile)
         imageName = up.name
+      }
+
+      if (params.useVace && !lookbookName) {
+        lookbookName = imageName
       }
     }
 
@@ -323,11 +342,11 @@ export function useGeneration(mode, { engine = 'wan', onDone } = {}) {
       }
     }
 
-    return { imageName, firstImageName, lastImageName }
+    return { imageName, firstImageName, lastImageName, lookbookName }
   }
 
   async function runOnce(params, uploaded, { timeoutMs, batchMeta } = {}) {
-    const { imageName, firstImageName, lastImageName } = uploaded
+    const { imageName, firstImageName, lastImageName, lookbookName: uploadedLookbook } = uploaded
     const batchPrefix = batchMeta ? `${batchHint(batchMeta.current, batchMeta.total)} · ` : ''
 
     status.value = 'queued'
@@ -335,8 +354,14 @@ export function useGeneration(mode, { engine = 'wan', onDone } = {}) {
     progress.value = { value: 0, max: 0 }
     elapsedSec.value = 0
 
+    const paramsWithRef = {
+      ...params,
+      lookbookName: uploadedLookbook || params.lookbookName,
+      refImageName: uploadedLookbook || params.refImageName || params.lookbookName
+    }
+
     const submitted = await submit(
-      toBody(params, imageName, { firstImageName, lastImageName })
+      toBody(paramsWithRef, imageName, { firstImageName, lastImageName })
     )
     promptId.value = submitted.prompt_id
     taskId.value = submitted.task_id
@@ -368,7 +393,8 @@ export function useGeneration(mode, { engine = 'wan', onDone } = {}) {
       faceBindingMode: params.faceBindingMode
     })
     const batchIntermediate = Boolean(batchMeta && batchMeta.current < batchMeta.total)
-    const lookbook = params.lookbookName || params.refImageName || uploaded.imageName || null
+    const lookbook =
+      uploaded.lookbookName || paramsWithRef.lookbookName || paramsWithRef.refImageName || uploaded.imageName || null
     const finishOpts = {
       batchIntermediate,
       lookbookName: lookbook,

@@ -70,6 +70,8 @@ const sceneBibleRequired = computed(() => runConfig.value.shotCount >= 12)
 const styleSuffix = ref(DEFAULT_STYLE_SUFFIX.trim().replace(/^,\s*/, ''))
 const baseSeed = ref(100)
 const imageFile = ref(null)
+/** VACE 时可选：段1场景起始图（不填则段1起始=定妆照） */
+const startImageFile = ref(null)
 const imageSourceMode = ref('single')
 const copied = ref(false)
 const continuityMode = ref(props.mode === 'i2v' ? 'chain+anchor' : 'production')
@@ -143,6 +145,10 @@ watch(
   (n) => syncShotCount(n),
   { immediate: true }
 )
+
+watch(useVace, (on) => {
+  if (!on) startImageFile.value = null
+})
 
 const {
   status,
@@ -385,6 +391,8 @@ async function onSubmit() {
     height: effectiveRes.value.height,
     baseSeed: baseSeed.value,
     imageFile: props.mode === 'i2v' ? imageFile.value : undefined,
+    startImageFile:
+      props.engine === 'wan' && props.mode === 'i2v' && useVace.value ? startImageFile.value : undefined,
     character: { ...character },
     // Wan 配音多角色，或 LTX 海康等已加载的三人卡司，都注入 cast
     characters:
@@ -492,7 +500,7 @@ async function copyConcatCommand() {
           <label v-if="mode === 'i2v'" class="toggle-row" style="margin-top: 6px">
             <input v-model="useVace" type="checkbox" :disabled="isBusy" />
             <span>
-              Wan-VACE 参考图引导（定妆照 → ref_images；需 VACE 权重；无脸末帧仍靠定妆照锁身份）
+              Wan-VACE 参考图引导（定妆照 → ref_images；可另传段1起始图）
             </span>
           </label>
         </template>
@@ -694,6 +702,13 @@ async function copyConcatCommand() {
           :output-height="effectiveRes.height"
           :disabled="isBusy"
         />
+        <div v-if="engine === 'wan' && useVace" class="field" style="margin-top: 10px">
+          <label>段1起始图（可选，不填则段1起始=定妆照）</label>
+          <ImageUploader v-model="startImageFile" :disabled="isBusy" />
+          <p class="muted" style="font-size: 12px; margin-top: 6px">
+            定妆照只锁身份；另传场景图可避免第1段首帧贴定妆照。
+          </p>
+        </div>
       </div>
 
       <div class="field">

@@ -60,9 +60,11 @@ const bindingOverrides = ref({})
 const imageFile = ref(null)
 const firstImageFile = ref(null)
 const lastImageFile = ref(null)
+/** VACE 专用：定妆照文件（与起始图分离） */
+const lookbookFile = ref(null)
 const imageSourceMode = ref('single')
 const validationError = ref('')
-/** 定妆照 input 文件名（上传起始图或手递时写入，供 VACE / 开下一段） */
+/** 定妆照 input 文件名（上传 / InstantID / 手递时写入，供 VACE / 开下一段） */
 const lookbookName = ref('')
 const useVace = ref(false)
 const handoffNotice = ref('')
@@ -209,6 +211,12 @@ async function onSubmit() {
     return
   }
 
+  const vaceOn = props.engine === 'wan' && props.mode === 'i2v' && useVace.value
+  if (vaceOn && !lookbookFile.value && !lookbookName.value && !imageFile.value && !pendingStartImageName.value) {
+    validationError.value = 'VACE 需要定妆照：请上传「定妆照」或「起始图片」'
+    return
+  }
+
   const seed = form.randomSeed ? Math.floor(Math.random() * 2 ** 31) : Number(form.seed)
   if (form.randomSeed) form.seed = seed
 
@@ -227,10 +235,11 @@ async function onSubmit() {
     useLightX2V: Boolean(useLightX2V.value),
     fps: presetFps.value,
     imageFile: imageFile.value,
-    imageName: pendingStartImageName.value || (lookbookName.value && !imageFile.value ? lookbookName.value : undefined),
+    imageName: pendingStartImageName.value || undefined,
     firstImageFile: firstImageFile.value,
     lastImageFile: lastImageFile.value,
-    useVace: props.engine === 'wan' && props.mode === 'i2v' && useVace.value,
+    useVace: vaceOn,
+    lookbookFile: vaceOn ? lookbookFile.value : undefined,
     lookbookName: lookbookName.value || undefined,
     refImageName: lookbookName.value || undefined,
     dubbingEnabled: props.engine === 'wan' && props.mode !== 'flf2v' && form.dubbingEnabled,
@@ -251,10 +260,11 @@ async function onSubmit() {
 function onHandoff({ mode, lastFrameName, lookbookName: lb }) {
   const lookbook = lb || lookbookName.value
   if (!lookbook && mode !== 'last') {
-    handoffNotice.value = '缺少定妆照：请先用起始图生成一段，或上传参考脸'
+    handoffNotice.value = '缺少定妆照：请先上传定妆照，或用起始图生成一段'
     return
   }
   imageFile.value = null
+  lookbookFile.value = null
   handoffNotice.value = ''
   pendingStartImageName.value = ''
   if (mode === 'lookbook') {
@@ -266,7 +276,7 @@ function onHandoff({ mode, lastFrameName, lookbookName: lb }) {
     lookbookName.value = lookbook
     pendingStartImageName.value = lookbook
     useVace.value = true
-    handoffNotice.value = `已设 VACE 参考=定妆照「${lookbook}」，起始同定妆照；可直接点生成`
+    handoffNotice.value = `已设 VACE 参考=定妆照「${lookbook}」，起始暂同定妆照；可再换一张「起始图片」`
   } else if (mode === 'last+lookbook') {
     if (!lastFrameName) {
       handoffNotice.value = '缺少末帧，无法用末帧+定妆照开下一段'
@@ -278,6 +288,10 @@ function onHandoff({ mode, lastFrameName, lookbookName: lb }) {
     handoffNotice.value = `已设起始=末帧「${lastFrameName}」+ VACE 参考定妆照「${lookbook}」`
   }
 }
+
+watch(useVace, (on) => {
+  if (!on) lookbookFile.value = null
+})
 
 async function onConfirmBindings() {
   await renderPendingDubbing(bindingOverrides.value)
@@ -341,7 +355,7 @@ onMounted(() => {
       </div>
 
       <div v-if="mode === 'i2v'" class="field">
-        <label>起始图片</label>
+        <label>起始图片（场景开场）</label>
         <template v-if="!simple">
           <div class="image-source-tabs">
             <button
@@ -378,8 +392,15 @@ onMounted(() => {
           style="margin-top: 8px"
         >
           <input v-model="useVace" type="checkbox" :disabled="isBusy" />
-          <span>Wan-VACE 参考引导（定妆照作 ref_images）</span>
+          <span>Wan-VACE 参考引导（另传定妆照锁身份）</span>
         </label>
+        <div v-if="engine === 'wan' && mode === 'i2v' && useVace" class="field" style="margin-top: 10px">
+          <label>定妆照 / VACE 参考（锁脸，勿与起始图相同）</label>
+          <ImageUploader v-model="lookbookFile" :disabled="isBusy" />
+          <p class="muted" style="font-size: 12px; margin-top: 6px">
+            未单独上传时回退用起始图作参考（首帧会很像起始图）。推荐：正脸定妆照 ≠ 场景起始图。
+          </p>
+        </div>
         <p v-if="lookbookName || pendingStartImageName" class="muted" style="font-size: 12px; margin-top: 6px">
           <template v-if="pendingStartImageName">下一段起始：{{ pendingStartImageName }}</template>
           <template v-if="lookbookName"> · 定妆照：{{ lookbookName }}</template>

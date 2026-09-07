@@ -2,7 +2,7 @@
 
 import { ref, computed, onUnmounted } from 'vue'
 import { uploadImage, viewUrl, generateT2V, generateI2V, generateFLF2V, waitForVideoTask } from '../services/api.js'
-import { extractVideoFrame, concatSegments, dubFinalVideo, renderDubSession, getDubSession, checkOrchestrator, analyzeSplice, validateSegment, normalizeSegmentDuration, isDurationOnlyFailure, validateFinalVideo, applyAnimateRelock, detectFaceInImage, DEFAULT_IDENTITY_THRESHOLD } from '../services/orchestrator.js'
+import { extractVideoFrame, concatSegments, dubFinalVideo, renderDubSession, getDubSession, checkOrchestrator, analyzeSplice, validateSegment, normalizeSegmentDuration, isDurationOnlyFailure, isResolutionMismatchFailure, validateFinalVideo, applyAnimateRelock, detectFaceInImage, DEFAULT_IDENTITY_THRESHOLD } from '../services/orchestrator.js'
 import {
   CHAIN_EXTRACT_OFFSET_SEC,
   CHAIN_I2V_STRENGTH,
@@ -229,6 +229,17 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
     return runConfig?.shotCount ?? MULTI_SHOT_COUNT
   }
 
+  /** 质检/抽帧分辨率必须与本段实际生成宽高一致（优先 UI params，其次 profile）。 */
+  function resolveGenRes(params, profile, segmentProfile = null) {
+    const fallback = getOutputRes(segmentProfile || profile)
+    const width = Number(params?.width)
+    const height = Number(params?.height)
+    return {
+      width: Number.isFinite(width) && width > 0 ? width : fallback.width,
+      height: Number.isFinite(height) && height > 0 ? height : fallback.height
+    }
+  }
+
   /** 把 Smart Splice 分析出的接缝运动分数（越低越"静"，接缝更干净）回填到对应分段，供质检可视化 */
   function applySeamMotionScores(plan) {
     for (const j of plan?.joins || []) {
@@ -237,12 +248,13 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
     }
   }
 
-  async function validateDubbedFinal(finalMedia, runConfig, profile) {
+  async function validateDubbedFinal(finalMedia, runConfig, profile, params = null) {
     dubbingStatus.value = 'validating'
     status.value = 'validating-dub'
+    const res = resolveGenRes(params, profile)
     const dubbedCheck = await validateFinalVideo(finalMedia, {
-      expectedWidth: getOutputRes(profile).width,
-      expectedHeight: getOutputRes(profile).height,
+      expectedWidth: res.width,
+      expectedHeight: res.height,
       minDuration: runConfig.finalDuration.min,
       maxDuration: runConfig.finalDuration.max,
       requireAudio: true
@@ -337,7 +349,7 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
         bindings: dubbed.bindings,
         sessionId: dubbingSessionId.value
       }
-      await validateDubbedFinal(finalMedia, runConfig, profile)
+      await validateDubbedFinal(finalMedia, runConfig, profile, params)
       finalVideo.value = { ...finalMedia, url: viewUrl(finalMedia) }
       pendingDubPayload.value = null
       lastDubError.value = null
@@ -714,9 +726,10 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
     async function runIdentityValidate(mediaItem) {
       if (!(engine === 'wan' && orchestratorOnline.value)) return null
       const isFlf2vSeg = segmentProfile.mode === 'flf2v'
+      const genRes = resolveGenRes(params, profile, segmentProfile)
       const validation = await validateSegment(mediaItem, {
-        expectedWidth: segmentProfile.outputRes?.width ?? profile.outputRes?.width ?? LTX_OUTPUT_RES.width,
-        expectedHeight: segmentProfile.outputRes?.height ?? profile.outputRes?.height ?? LTX_OUTPUT_RES.height,
+        expectedWidth: genRes.width,
+        expectedHeight: genRes.height,
         minDuration: segDur?.min ?? 4.5,
         maxDuration: isFlf2vSeg ? Math.max(segDur?.max ?? 6.5, 6.5) : (segDur?.max ?? 6.0),
         requireAudio: false,
@@ -785,7 +798,7 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
     const frames = (!validation || validation.ok) && shouldExtractChainFrames(continuityMode)
       ? await extractAndCacheFrames(finalItem, segmentIndex, {
           chainLink: segmentIndex < shotCountOf(activeRunConfig) - 1,
-          outputRes: getOutputRes(segmentProfile),
+          outputRes: resolveGenRes(params, profile, segmentProfile),
           fps: profile.fps ?? segmentProfile.fps ?? 24,
           discardZoneSec: activeRunConfig?.discardZoneSec
         })
@@ -841,6 +854,15 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
           : '时长超限无法靠换 seed 修复'
         throw new Error(
           `第 ${ctx.segmentIndex + 1} 段质检未达标：${reason}；${hint}${profileFpsHint(ctx)}；请用下方"重试该段"人工介入`
+        )
+      }
+      // 分辨率不符换 seed 无效：立刻停，避免空转 3 次
+      if (isResolutionMismatchFailure(validation.issues)) {
+        selfHealNotice.value = ''
+        const reason = (validation.issues || []).join('; ') || '未知原因'
+        const want = resolveGenRes(ctx.params, ctx.profile, ctx.segmentProfile)
+        throw new Error(
+          `第 ${ctx.segmentIndex + 1} 段分辨率不符：${reason}；生成期望 ${want.width}×${want.height}，请核对 UI 分辨率选择后重试该段（换 seed 无法修复）`
         )
       }
       if (attempt === MAX_SELF_HEAL_RETRIES) {
@@ -929,8 +951,23 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
       }
     }
 
+    // VACE：可选段1场景起始图（与定妆照分离，避免首帧贴定妆照）
+    if (engine === 'wan' && params.useVace && params.startImageFile) {
+      status.value = 'uploading'
+      try {
+        const startUp = await uploadImage(params.startImageFile)
+        chainImageName = startUp.name
+      } catch (e) {
+        errorMsg.value = e.message || '段1起始图上传失败'
+        status.value = 'error'
+        return
+      }
+    }
+
     if (mode === 'i2v' && !isProductionMode(continuityMode)) {
-      chainImageName = anchorImageName
+      if (!(engine === 'wan' && params.useVace && params.startImageFile && chainImageName)) {
+        chainImageName = anchorImageName
+      }
     }
 
     status.value = 'running'
@@ -1027,7 +1064,7 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
             const dubbedMedia = await runMultishotDubbing(merged, params, list, runConfig, profile)
             if (!dubbedMedia) return
             finalMedia = dubbedMedia
-            await validateDubbedFinal(finalMedia, runConfig, profile)
+            await validateDubbedFinal(finalMedia, runConfig, profile, params)
           }
 
           finalVideo.value = {
@@ -1247,7 +1284,7 @@ export function useMultiShotGeneration({ engine = 'ltx', mode = 't2v', onDone } 
             const dubbedMedia = await runMultishotDubbing(merged, params, list, runConfig, profile)
             if (!dubbedMedia) return
             finalMedia = dubbedMedia
-            await validateDubbedFinal(finalMedia, runConfig, profile)
+            await validateDubbedFinal(finalMedia, runConfig, profile, params)
           }
           finalVideo.value = { ...finalMedia, url: viewUrl(finalMedia) }
         } catch (e) {

@@ -99,7 +99,7 @@ async function concatVideos(inputPaths, outputPath, listPath) {
   }
 }
 
-app.post('/api/concat', upload.array('videos', 20), async (req, res) => {
+app.post('/api/concat', upload.array('videos', 100), async (req, res) => {
   const files = req.files
   if (!files?.length) {
     return res.status(400).json({ error: '请至少上传一个视频' })

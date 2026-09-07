@@ -126,6 +126,7 @@
 **/.env.*.local
 **/*.local
 **/secrets/
+**/.secrets/
 **/.DS_Store
 **/Thumbs.db
 
@@ -138,28 +139,23 @@ wan22-demo/backend/data/dubbing_sessions/
 video-concat/uploads/
 video-concat/output/
 
-# --- ComfyUI 特有 ---
-ComfyUI/custom_nodes/
-!ComfyUI/custom_nodes/example_node.py.example
-ComfyUI/extra_model_paths.yaml
-ComfyUI/web_custom_versions/
-ComfyUI/uv.lock
-ComfyUI/filtered-openapi.yaml
 
-# 保留已安装的 custom node 清单（可选跟踪）
-# !ComfyUI/custom_nodes/ComfyUI-WanVideoWrapper/
-# !ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/
+# --- 文档（本地保留，不推远程） ---
+**/docs/
 
-# --- 实验 / 未接入主链路（本地保留，不提交） ---
-JoyAI-Echo/
-GPT-SoVITS/
-MuseTalk/
-
-# --- 实验 / 未接入主链路（本地保留，不提交） ---
-JoyAI-Echo/
-GPT-SoVITS/
-MuseTalk/
-ComfyUI_JoyAI_Echo/
+# --- 超大 tokenizer / 词典 / 演示资源（本地保留，避免 HTTPS 推送 408） ---
+**/tokenizer.json
+**/tokenizer.model
+**/vocab.json
+**/merges.txt
+JoyAI-Echo/assets/
+JoyAI-Echo/*.pdf
+GPT-SoVITS/GPT_SoVITS/text/ja_userdic/
+GPT-SoVITS/GPT_SoVITS/text/cmudict.rep
+GPT-SoVITS/GPT_SoVITS/text/cmudict-fast.rep
+GPT-SoVITS/GPT_SoVITS/text/g2pw/*.rep
+MuseTalk/assets/demo/
+MuseTalk/assets/figs/
 
 # --- 归档 / 不完整下载 ---
 archive/
@@ -193,3 +189,4 @@ models/
 **/.cache/huggingface/
 **/.cache/modelscope/
 **/hub/
+**/tokenizer_config.json

@@ -122,6 +122,15 @@ export function isDurationOnlyFailure(issues = []) {
   return Array.isArray(issues) && issues.length > 0 && issues.every((item) => String(item).startsWith('duration '))
 }
 
+/** 宽高不符：换 seed / 自愈重试无法修复，应立即人工介入并核对 UI 分辨率与工作流。 */
+export function isResolutionMismatchFailure(issues = []) {
+  if (!Array.isArray(issues) || !issues.length) return false
+  return issues.every((item) => {
+    const s = String(item)
+    return s.startsWith('width ') || s.startsWith('height ')
+  })
+}
+
 export async function validateFinalVideo(media, options = {}) {
   return validateFinalApi({
     filename: media.filename,

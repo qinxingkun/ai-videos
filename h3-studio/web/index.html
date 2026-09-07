@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>H3 Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <h1>H3 Studio</h1>
+          <p>MiniMax-H3 本地测试台 · FL2VA / Ref2VA · 参数可配 · GPU 实时监控</p>
+        </div>
+        <div class="status-row">
+          <span class="pill"><span id="fl2va-dot" class="dot"></span><span id="fl2va-label">FL2VA</span></span>
+          <span class="pill"><span id="ref2va-dot" class="dot"></span><span id="ref2va-label">Ref2VA</span></span>
+          <button class="btn" id="refresh" type="button">刷新状态</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="panel panel-pad">
+          <h2>GPU</h2>
+          <div id="gpus"></div>
+        </aside>
+
+        <main class="panel panel-pad">
+          <h2>Generate</h2>
+          <div class="modes" id="modes"></div>
+          <p class="hint" id="mode-hint"></p>
+          <div class="error" id="upstream-warn" hidden></div>
+          <div class="error" id="error" hidden></div>
+
+          <div class="field">
+            <label>Prompt</label>
+            <textarea id="prompt"></textarea>
+          </div>
+          <div class="actions" style="margin-top: 0; margin-bottom: 12px">
+            <button class="btn" id="reset-prompt" type="button">重置模板</button>
+          </div>
+
+          <div id="uploads" class="uploads"></div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label>时长 (秒)</label>
+              <input id="duration" type="number" min="4" max="15" step="0.5" value="5" />
+            </div>
+            <div class="field">
+              <label>短边（H3 固定 768）</label>
+              <input type="number" value="768" disabled />
+            </div>
+            <div class="field">
+              <label>宽高比</label>
+              <select id="aspect">
+                <option>16:9</option>
+                <option>9:16</option>
+                <option>1:1</option>
+                <option>4:3</option>
+                <option>3:4</option>
+                <option>21:9</option>
+                <option>auto</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="field">
+              <label>Seed</label>
+              <input id="seed" type="number" value="42" />
+            </div>
+            <div class="field">
+              <label>推理步数（可选）</label>
+              <input id="steps" type="number" min="1" max="100" placeholder="默认" />
+            </div>
+            <div class="field">
+              <label>说明</label>
+              <input value="smoke 可用 steps=8" disabled />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="submit" type="button">开始生成</button>
+          </div>
+
+          <h2 style="margin-top: 22px">当前任务</h2>
+          <div id="active"></div>
+        </main>
+
+        <aside class="panel panel-pad">
+          <h2>历史</h2>
+          <div id="history"></div>
+        </aside>
+      </div>
+    </div>
+    <script src="/app.js"></script>
+  </body>
+</html>
